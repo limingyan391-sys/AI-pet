@@ -6,6 +6,14 @@
 
 ---
 
+## 🎬 Demo 视频演示
+
+[![宠小满 Demo 视频](https://img.shields.io/badge/Bilibili-点击观看-FF6B35?logo=bilibili)](https://www.bilibili.com/video/BV1APJH6UEFc)
+
+> 👆 点击上方按钮跳转 B 站观看产品演示视频
+
+----
+
 ## 📁 项目结构
 
 ```
