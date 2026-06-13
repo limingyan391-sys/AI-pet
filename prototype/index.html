@@ -1,0 +1,329 @@
+﻿
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>宠小满 - AI宠物健康管家</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f5f5;color:#333;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh;width:100vw}
+#app{max-width:430px;margin:0 auto;height:100vh;display:flex;flex-direction:column;background:#f5f5f5;position:relative;overflow:hidden}
+#splash{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#FF8C42,#FF6B35,#f7931e,#FFD166);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s,visibility .5s}
+#splash.hidden{opacity:0;visibility:hidden;pointer-events:none}
+#splash .logo{width:100px;height:100px;background:#fff;border-radius:28px;display:flex;align-items:center;justify-content:center;font-size:52px;box-shadow:0 12px 40px rgba(255,107,53,.4);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+#splash h1{color:#fff;font-size:28px;font-weight:700;margin-top:20px;letter-spacing:2px}
+#splash p{color:rgba(255,255,255,.9);font-size:14px;margin-top:6px}
+#splash .loader{margin-top:30px;width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.header{background:linear-gradient(135deg,#FF8C42,#FF6B35);color:#fff;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:100}
+.header-title{font-size:17px;font-weight:600}
+.header-icon{font-size:22px;cursor:pointer;opacity:.9}
+.page-container{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;padding-bottom:16px}
+.page-container.active{display:block}
+.tab-bar{display:flex;background:#fff;border-top:1px solid #eee;padding-bottom:max(4px,env(safe-area-inset-bottom));flex-shrink:0;z-index:100}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0;cursor:pointer;transition:color .2s;color:#999;font-size:11px}
+.tab-item .tab-icon{font-size:24px;margin-bottom:2px;line-height:1}
+.tab-item.active{color:#FF6B35}
+.pet-card{margin:12px 16px;background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px}
+.pet-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#ffe0cc,#ffcca3);display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0}
+.pet-info{flex:1}.pet-name{font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px}
+.pet-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.badge-normal{background:#e8f5e9;color:#2e7d32}
+.badge-watch{background:#fff3e0;color:#e65100}
+.badge-alert{background:#fce4ec;color:#c62828}
+.pet-detail{font-size:12px;color:#888;margin-top:4px}
+.health-status{margin-top:8px;display:flex;gap:12px}
+.hs-item{text-align:center}.hs-val{font-size:16px;font-weight:600;color:#FF6B35}
+.hs-label{font-size:11px;color:#999;margin-top:2px}
+.quick-actions{margin:0 16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.qa-item{background:#fff;border-radius:14px;padding:14px 8px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:transform .15s}
+.qa-item:active{transform:scale(.95)}
+.qa-icon{font-size:32px;display:block;margin-bottom:6px}
+.qa-label{font-size:12px;color:#555;font-weight:500}
+.section-title{margin:16px 16px 8px;font-size:15px;font-weight:600;color:#333;display:flex;align-items:center;gap:6px}
+.alert-item{margin:0 16px 8px;background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.alert-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.alert-dot.red{background:#f44336}.alert-dot.yellow{background:#ff9800}.alert-dot.green{background:#4caf50}
+.alert-content{flex:1}.alert-title{font-size:14px;font-weight:500}
+.alert-desc{font-size:12px;color:#888;margin-top:2px}.alert-arrow{color:#ccc}
+.activity-item{margin:0 16px 6px;background:#fff;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.act-icon{font-size:24px}.act-content{flex:1}.act-title{font-size:13px;font-weight:500}.act-time{font-size:11px;color:#bbb}
+.camera-area{margin:12px 16px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:16px;height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;position:relative;overflow:hidden}
+.camera-area .cam-icon{width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px}
+.camera-area p{font-size:14px;opacity:.9}.camera-area .cam-hint{font-size:11px;opacity:.6;margin-top:4px}
+.analysis-type{margin:12px 16px;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.analysis-type::-webkit-scrollbar{display:none}
+.at-chip{white-space:nowrap;padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#666;transition:all .2s;flex-shrink:0}
+.at-chip.active{background:#FF6B35;color:#fff;border-color:#FF6B35}
+.upload-options{margin:8px 16px;display:flex;gap:10px}
+.upload-btn{flex:1;padding:14px;border-radius:12px;text-align:center;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:transform .15s}
+.upload-btn:active{transform:scale(.97)}.upload-btn.camera{background:#FF6B35;color:#fff}
+.upload-btn.album{background:#fff;color:#FF6B35;border:2px solid #FF6B35}
+.result-page{display:none}.result-page.active{display:block}
+.result-card{margin:12px 16px;background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.result-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.result-level{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600}
+.level-green{background:#e8f5e9;color:#2e7d32}.level-yellow{background:#fff3e0;color:#e65100}.level-red{background:#fce4ec;color:#c62828}
+.result-image{width:100%;height:200px;border-radius:12px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:60px;margin-bottom:16px}
+.result-section{margin-bottom:14px}.result-section h4{font-size:14px;font-weight:600;color:#FF6B35;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.result-section p{font-size:13px;color:#555;line-height:1.7}
+.result-actions{display:flex;gap:10px;margin:16px 16px 0}
+.result-btn{flex:1;padding:14px;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;border:none;text-align:center}
+.result-btn.primary{background:#FF6B35;color:#fff}
+.result-btn.secondary{background:#fff;color:#FF6B35;border:2px solid #FF6B35}
+.chat-container{display:flex;flex-direction:column;height:100%}
+.chat-messages{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+.chat-msg{max-width:82%;padding:12px 14px;border-radius:16px;font-size:14px;line-height:1.6;word-break:break-word}
+.chat-msg.user{align-self:flex-end;background:#FF6B35;color:#fff;border-bottom-right-radius:4px}
+.chat-msg.ai{align-self:flex-start;background:#fff;color:#333;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.chat-msg.ai .ai-label{font-size:11px;color:#FF6B35;font-weight:600;margin-bottom:4px}
+.typing-indicator{align-self:flex-start;background:#fff;border-radius:16px;padding:12px 16px;display:flex;gap:5px;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.typing-indicator span{width:8px;height:8px;background:#ccc;border-radius:50%;animation:typeBounce 1.4s ease-in-out infinite}
+.typing-indicator span:nth-child(2){animation-delay:.2s}.typing-indicator span:nth-child(3){animation-delay:.4s}
+@keyframes typeBounce{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.chat-input-bar{display:flex;gap:10px;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:#fff;border-top:1px solid #eee;align-items:center}
+.chat-input-bar input{flex:1;padding:10px 14px;border-radius:20px;border:1px solid #e0e0e0;font-size:14px;outline:none;background:#f8f8f8}
+.chat-input-bar input:focus{border-color:#FF6B35;background:#fff}
+.chat-send{width:40px;height:40px;border-radius:50%;background:#FF6B35;color:#fff;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.profile-pets{padding:12px 16px}
+.pet-profile-card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04);margin-bottom:12px}
+.ppc-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ppc-avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#ffe0cc,#ffcca3);display:flex;align-items:center;justify-content:center;font-size:28px}
+.ppc-info{flex:1}.ppc-name{font-size:16px;font-weight:600}.ppc-breed{font-size:12px;color:#888}
+.ppc-body{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ppc-stat{text-align:center;padding:10px 6px;background:#f8f8f8;border-radius:10px}
+.ppc-stat-val{font-size:15px;font-weight:600;color:#FF6B35}.ppc-stat-label{font-size:11px;color:#999;margin-top:2px}
+.timeline{margin:0 16px}
+.tl-item{display:flex;gap:12px;padding-bottom:16px;position:relative}
+.tl-dot{width:12px;height:12px;border-radius:50%;background:#FF6B35;flex-shrink:0;margin-top:4px;position:relative;z-index:1}
+.tl-item::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:2px;background:#eee}
+.tl-item:last-child::before{display:none}
+.tl-content{flex:1}.tl-date{font-size:12px;color:#999}.tl-title{font-size:14px;font-weight:500;margin-top:2px}.tl-desc{font-size:12px;color:#888;margin-top:2px}
+.reminder-list{padding:12px 16px}
+.reminder-card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04);margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.reminder-icon{font-size:32px;flex-shrink:0}.reminder-info{flex:1}
+.reminder-name{font-size:15px;font-weight:500}.reminder-date{font-size:12px;color:#888;margin-top:3px}
+.reminder-toggle{width:50px;height:28px;border-radius:14px;cursor:pointer;position:relative;transition:background .3s;flex-shrink:0}
+.reminder-toggle.on{background:#FF6B35}.reminder-toggle.off{background:#ddd}
+.reminder-toggle::after{content:"";width:24px;height:24px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.reminder-toggle.on::after{left:24px}.reminder-toggle.off::after{left:2px}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;width:85%;max-width:360px;text-align:center}
+.modal h3{font-size:17px;margin-bottom:12px}.modal p{font-size:14px;color:#666;margin-bottom:20px}
+.modal-btns{display:flex;gap:10px}
+.modal-btn{flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none}
+.modal-btn.confirm{background:#FF6B35;color:#fff}.modal-btn.cancel{background:#f5f5f5;color:#666}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.78);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.fade-in{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.cta-banner{margin:12px 16px;background:linear-gradient(135deg,#fff8f0,#fff0e0);border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:1px solid #ffe0c0}
+.cta-text{font-size:13px;color:#e65100;font-weight:500}.cta-arrow{font-size:20px;color:#FF6B35}
+.empty-state{text-align:center;padding:40px 20px;color:#bbb}.empty-state .empty-icon{font-size:48px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="splash"><div class="logo">🐾</div><h1>宠小满</h1><p>拍一拍，更懂它</p><div class="loader"></div></div>
+<div class="header" id="header"><div class="header-icon" onclick="showPage('reminders')">🔔</div><div class="header-title" id="headerTitle">宠小满</div><div class="header-icon">📤</div></div>
+C:\Users\mingyan2233
+
+<div class="page-container active" id="page-home">
+<div class="pet-card fade-in"><div class="pet-avatar">🐱</div><div class="pet-info"><div class="pet-name">团团 <span class="pet-badge badge-normal">健康</span></div><div class="pet-detail">英短蓝猫 · 1岁2个月 · 4.2kg</div><div class="health-status"><div class="hs-item"><div class="hs-val">87</div><div class="hs-label">健康指数</div></div><div class="hs-item"><div class="hs-val">3</div><div class="hs-label">本周分析</div></div><div class="hs-item"><div class="hs-val">0</div><div class="hs-label">待处理</div></div></div></div></div>
+<div class="quick-actions fade-in">
+<div class="qa-item" onclick="switchTab('camera')"><span class="qa-icon">📸</span><span class="qa-label">拍照分析</span></div>
+<div class="qa-item" onclick="switchTab('chat')"><span class="qa-icon">💬</span><span class="qa-label">AI问答</span></div>
+<div class="qa-item" onclick="switchTab('profile')"><span class="qa-icon">📋</span><span class="qa-label">健康档案</span></div>
+<div class="qa-item" onclick="showPage('reminders')"><span class="qa-icon">🔔</span><span class="qa-label">智能提醒</span></div>
+</div>
+<div class="section-title">⚠️ 健康提醒</div>
+<div class="alert-item"><div class="alert-dot yellow"></div><div class="alert-content"><div class="alert-title">驱虫即将到期</div><div class="alert-desc">团团上次体内驱虫是3月13日，建议本周内进行</div></div><div class="alert-arrow">›</div></div>
+<div class="alert-item"><div class="alert-dot green"></div><div class="alert-content"><div class="alert-title">疫苗提醒：1周后</div><div class="alert-desc">猫三联加强针 — 6月20日</div></div><div class="alert-arrow">›</div></div>
+<div class="section-title">📋 最近记录</div>
+<div class="activity-item"><span class="act-icon">📸</span><div class="act-content"><div class="act-title">皮肤分析 — 🟢 正常</div><div class="act-time">今天 10:23</div></div></div>
+<div class="activity-item"><span class="act-icon">💬</span><div class="act-content"><div class="act-title">AI问答 — 猫咪打喷嚏怎么办</div><div class="act-time">昨天 21:15</div></div></div>
+<div class="activity-item"><span class="act-icon">📸</span><div class="act-content"><div class="act-title">便便分析 — 🟡 偏软，建议观察</div><div class="act-time">6月11日 08:40</div></div></div>
+<div class="cta-banner" onclick="showPayModal()"><div><div style="font-weight:600;font-size:14px;">🐾 升级宠小满会员</div><div class="cta-text">无限次AI分析 · 深度报告 · 健康趋势</div></div><div class="cta-arrow">›</div></div>
+</div><div class="page-container" id="page-camera">
+<div id="camera-view">
+<div class="camera-area fade-in"><div class="cam-icon">📷</div><p>对准宠物拍照分析</p><p class="cam-hint">支持皮肤、眼睛、牙齿、体态、便便</p></div>
+<div class="analysis-type fade-in">
+<div class="at-chip active" data-type="skin" onclick="selectAnalysisType(this)">🩺 皮肤</div>
+<div class="at-chip" data-type="eye" onclick="selectAnalysisType(this)">👁️ 眼睛</div>
+<div class="at-chip" data-type="teeth" onclick="selectAnalysisType(this)">🦷 牙齿</div>
+<div class="at-chip" data-type="body" onclick="selectAnalysisType(this)">⚖️ 体态</div>
+<div class="at-chip" data-type="poop" onclick="selectAnalysisType(this)">💩 便便</div>
+</div>
+<div class="upload-options fade-in"><button class="upload-btn camera" onclick="simulateCapture()">📷 拍照</button><button class="upload-btn album" onclick="simulateCapture()">🖼️ 从相册选择</button></div>
+</div>
+<div id="camera-result" class="result-page"></div>
+</div>
+<div class="page-container" id="page-chat">
+<div class="chat-container" style="height:100%;display:flex;flex-direction:column;">
+<div class="chat-messages" id="chatMessages">
+<div class="chat-msg ai"><div class="ai-label">🐾 宠小满AI助手</div>你好！我是宠小满的AI养宠顾问 🐱🐶<br><br>你可以问我任何关于宠物健康、行为、喂养的问题。比如：<br>• "猫吐了黄色的水怎么办"<br>• "狗狗一直挠耳朵正常吗"<br>• "布偶猫应该吃什么粮"<br><br>拍个照片给我看，我还能帮你分析皮肤、眼睛、牙齿的健康状况哦！</div>
+</div>
+<div class="chat-input-bar"><input type="text" id="chatInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')sendMessage()"><button class="chat-send" onclick="sendMessage()">➤</button></div>
+</div>
+</div>
+<div class="page-container" id="page-profile">
+<div class="profile-pets fade-in"><div class="pet-profile-card"><div class="ppc-header"><div class="ppc-avatar">🐱</div><div class="ppc-info"><div class="ppc-name">团团</div><div class="ppc-breed">英短蓝猫 · 公 · 已绝育</div></div></div><div class="ppc-body"><div class="ppc-stat"><div class="ppc-stat-val">1岁2月</div><div class="ppc-stat-label">年龄</div></div><div class="ppc-stat"><div class="ppc-stat-val">4.2kg</div><div class="ppc-stat-label">体重</div></div><div class="ppc-stat"><div class="ppc-stat-val">87分</div><div class="ppc-stat-label">健康指数</div></div></div></div></div>
+<div class="section-title">📅 疫苗与驱虫记录</div>
+<div class="timeline fade-in">
+<div class="tl-item"><div class="tl-dot"></div><div class="tl-content"><div class="tl-date">2026年6月20日（预计）</div><div class="tl-title">猫三联加强针</div><div class="tl-desc">年度加强免疫</div></div></div>
+<div class="tl-item"><div class="tl-dot" style="background:#4caf50;"></div><div class="tl-content"><div class="tl-date">2026年3月13日</div><div class="tl-title">体内驱虫 — 已完成</div><div class="tl-desc">拜耳驱虫药 · 半片</div></div></div>
+<div class="tl-item"><div class="tl-dot" style="background:#4caf50;"></div><div class="tl-content"><div class="tl-date">2025年10月5日</div><div class="tl-title">年度体检 — 已完成</div><div class="tl-desc">血常规+生化 · 全部指标正常</div></div></div>
+<div class="tl-item"><div class="tl-dot" style="background:#4caf50;"></div><div class="tl-content"><div class="tl-date">2025年6月20日</div><div class="tl-title">猫三联疫苗 — 已完成</div><div class="tl-desc">基础免疫第三针</div></div></div>
+</div>
+<div class="section-title">📊 健康趋势</div>
+<div class="empty-state"><div class="empty-icon">📈</div><p>升级会员解锁健康趋势追踪</p><p style="font-size:12px;margin-top:4px;">自动记录每次分析数据，生成体重、皮肤、消化等健康趋势图</p></div>
+</div>
+<div class="page-container" id="page-reminders">
+<div class="reminder-list fade-in">
+<div class="reminder-card"><span class="reminder-icon">💉</span><div class="reminder-info"><div class="reminder-name">猫三联加强针</div><div class="reminder-date">团团 · 2026年6月20日 · 还有7天</div></div><div class="reminder-toggle on" onclick="toggleReminder(this)"></div></div>
+<div class="reminder-card"><span class="reminder-icon">🪱</span><div class="reminder-info"><div class="reminder-name">体内驱虫</div><div class="reminder-date">团团 · 建议本周内 · 已逾期3天</div></div><div class="reminder-toggle on" onclick="toggleReminder(this)"></div></div>
+<div class="reminder-card"><span class="reminder-icon">🪮</span><div class="reminder-info"><div class="reminder-name">体外驱虫</div><div class="reminder-date">团团 · 2026年7月5日 · 还有22天</div></div><div class="reminder-toggle on" onclick="toggleReminder(this)"></div></div>
+<div class="reminder-card"><span class="reminder-icon">🏥</span><div class="reminder-info"><div class="reminder-name">年度体检</div><div class="reminder-date">团团 · 2026年10月5日 · 还有114天</div></div><div class="reminder-toggle off" onclick="toggleReminder(this)"></div></div>
+<div class="reminder-card"><span class="reminder-icon">✂️</span><div class="reminder-info"><div class="reminder-name">指甲修剪</div><div class="reminder-date">团团 · 2026年6月18日 · 还有5天</div></div><div class="reminder-toggle on" onclick="toggleReminder(this)"></div></div>
+</div>
+</div>
+<div class="tab-bar" id="tabBar">
+<div class="tab-item active" data-page="home" onclick="switchTab('home')"><span class="tab-icon">🏠</span>首页</div>
+<div class="tab-item" data-page="camera" onclick="switchTab('camera')"><span class="tab-icon">📸</span>拍照</div>
+<div class="tab-item" data-page="chat" onclick="switchTab('chat')"><span class="tab-icon">💬</span>问答</div>
+<div class="tab-item" data-page="profile" onclick="switchTab('profile')"><span class="tab-icon">📋</span>档案</div>
+</div>
+<div class="modal-overlay" id="payModal"><div class="modal"><h3>🐾 升级宠小满会员</h3><p>无限次AI拍照分析 · 深度健康报告 · 3只宠物档案 · 健康趋势追踪</p><div style="margin-bottom:16px;"><div style="font-size:28px;font-weight:700;color:#FF6B35;">¥19.9<span style="font-size:14px;color:#999;">/月</span></div><div style="font-size:12px;color:#888;margin-top:4px;">或 ¥169/年（省¥70）</div></div><div class="modal-btns"><button class="modal-btn cancel" onclick="closePayModal()">暂不升级</button><button class="modal-btn confirm" onclick="closePayModal();showToast('支付功能将在正式版上线')">立即升级</button></div></div></div>
+<div class="toast" id="toast"></div>
+</div>
+<script>
+var currentTab='home',currentAnalysisType='skin';
+setTimeout(function(){document.getElementById('splash').classList.add('hidden')},1800);
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab-item').forEach(function(t){t.classList.remove('active')});
+  var el=document.querySelector('.tab-item[data-page="'+tab+'"]');
+  if(el)el.classList.add('active');
+  document.querySelectorAll('.page-container').forEach(function(p){p.classList.remove('active')});
+  var page=document.getElementById('page-'+tab);
+  if(page)page.classList.add('active');
+  var t2={home:'宠小满',camera:'拍照分析',chat:'AI问答',profile:'健康档案'};
+  document.getElementById('headerTitle').textContent=t2[tab]||'宠小满';
+}
+function showPage(n){
+  if(n==='reminders'){
+    document.querySelectorAll('.page-container').forEach(function(p){p.classList.remove('active')});
+    document.getElementById('page-reminders').classList.add('active');
+    document.querySelectorAll('.tab-item').forEach(function(t){t.classList.remove('active')});
+    document.getElementById('headerTitle').textContent='智能提醒';
+    currentTab='reminders';
+  }
+}
+function selectAnalysisType(c){
+  document.querySelectorAll('.at-chip').forEach(function(x){x.classList.remove('active')});
+  c.classList.add('active');
+  currentAnalysisType=c.dataset.type;
+}
+var ad={
+skin:{level:'yellow',cn:'皮肤检查',img:'🔬',
+  ev:'局部脱毛约1.5cm²<br>脱毛区边缘清晰呈类圆形<br>表面少量白色皮屑<br>未见红肿、化脓或出血',
+  ca:'1. 真菌感染（猫癣）可能性最高<br>2. 过敏性皮炎如近期换粮或环境变化<br>3. 机械性摩擦如项圈过紧或频繁抓挠',
+  ad:'① 保持患处清洁干燥<br>② 使用宠物专用抗真菌喷雾<br>③ 戴伊丽莎白圈防舔舐扩散<br>④ 每日拍照记录，3-5天后复检<br>⑤ 多宠家庭建议隔离',
+  wa:'48小时内快速扩大<br>出现红肿、化脓或出血<br>精神萎靡、食欲下降<br>出现任一情况立即就医'},
+eye:{level:'green',cn:'眼睛检查',img:'👁️',
+  ev:'双眼对称形态正常<br>角膜清澈无混浊<br>结膜淡粉色正常<br>无明显分泌物或泪痕<br>第三眼睑未见突出',
+  ca:'当前眼部状态良好。英短需持续关注泪痕问题。',
+  ad:'① 定期用宠物湿巾擦拭眼周<br>② 观察有无异常流泪或眯眼<br>③ 建议每6个月一次眼科检查<br>④ 避免灰尘、猫砂粉尘刺激',
+  wa:'大量黄或绿色分泌物<br>眼睛红肿睁不开<br>频繁揉眼<br>角膜出现白斑或混浊<br>出现任一情况及时就医'},
+teeth:{level:'green',cn:'牙齿检查',img:'🦷',
+  ev:'牙齿排列整齐咬合正常<br>牙釉质光滑无牙结石<br>牙龈淡粉色无红肿<br>无口臭或轻微正常气味',
+  ca:'口腔健康良好！1岁猫处于牙齿黄金期，建议养成护理习惯。',
+  ad:'① 每周刷牙2-3次（宠物牙膏）<br>② 辅助洁牙零食或玩具<br>③ 每年1次专业口腔检查<br>④ 观察有无流口水、拒食',
+  wa:'牙龈明显红肿或出血<br>严重口臭<br>流口水增多、进食困难<br>牙齿松动或脱落<br>出现任一情况请就医'},
+body:{level:'green',cn:'体态评估',img:'⚖️',
+  ev:'俯视可见明显腰线<br>侧面观腹部轻微上收<br>肋骨可触摸不可见<br>BCS体况约4-5/9（理想）',
+  ca:'体态理想！4.2kg对1岁英短公猫属健康体重。绝育后需持续监测。',
+  ad:'① 维持当前喂食量（50-60g干粮每日）<br>② 每日20-30分钟互动玩耍<br>③ 每月称重建立体重曲线<br>④ 绝育后避免自由采食',
+  wa:'月体重波动超10%<br>肋骨明显可见或完全摸不到<br>行动迟缓不愿跳跃<br>出现任一情况咨询兽医'},
+poop:{level:'yellow',cn:'便便分析',img:'💩',
+  ev:'成形但偏软（布里斯托4-5级）<br>浅棕色基本正常<br>表面少量黏液<br>未见明显血丝或异物',
+  ca:'1. 饮食变化 近期换粮或新零食<br>2. 轻度消化不良 吃太快或过量<br>3. 轻微肠道菌群失衡<br>4. 应激反应 环境变化',
+  ad:'① 观察24h暂不换粮<br>② 添加益生菌（布拉迪酵母）<br>③ 少量多餐避免过饱<br>④ 确保饮水充足<br>⑤ 记录未来3次排便',
+  wa:'水样腹泻超24h<br>便血（鲜红或黑色）<br>伴随呕吐、萎靡<br>排便时明显痛苦<br>出现任一情况立即就医'}
+};
+function simulateCapture(){
+  var rp=document.getElementById('camera-result');
+  var cv=document.getElementById('camera-view');
+  var d=ad[currentAnalysisType];
+  var ll={green:'🟢 正常',yellow:'🟡 建议观察',red:'🔴 建议就医'};
+  rp.innerHTML='<div class="result-card fade-in">'+
+    '<div class="result-header"><span class="result-level level-'+d.level+'">'+ll[d.level]+'</span><span style="font-size:13px;color:#888;">'+d.cn+'</span></div>'+
+    '<div class="result-image">'+d.img+'</div>'+
+    '<div class="result-section"><h4>🔍 分析依据</h4><p>'+d.ev+'</p></div>'+
+    '<div class="result-section"><h4>💡 可能原因</h4><p>'+d.ca+'</p></div>'+
+    '<div class="result-section"><h4>✅ 建议措施</h4><p>'+d.ad+'</p></div>'+
+    '<div class="result-section"><h4>⚠️ 危险信号</h4><p>'+d.wa+'</p></div></div>'+
+    '<div class="result-actions fade-in"><button class="result-btn secondary" onclick="resetCamera()">重新拍照</button><button class="result-btn primary" onclick="showToast(\'已存入健康档案\')">📋 存入档案</button></div>'+
+    '<div class="result-actions fade-in" style="margin-top:4px;"><button class="result-btn secondary" onclick="switchTab(\'chat\');showToast(\'已切换到AI问答\')">💬 继续问AI</button></div>';
+  cv.style.display='none';
+  rp.classList.add('active');rp.style.display='block';
+}
+function resetCamera(){
+  document.getElementById('camera-view').style.display='block';
+  var rp=document.getElementById('camera-result');
+  rp.classList.remove('active');rp.style.display='none';rp.innerHTML='';
+}
+var cr={
+  '吐':{msg:'别担心，先确认几个关键信息：<br><br>1. 今天正常进食了吗？<br>2. 呕吐物什么颜色？（黄色=胆汁，白色=泡沫，褐色=食物）<br>3. 最近排便正常吗？<br><br>请告诉我细节，我给你更准确的建议。',delay:1200},
+  '皮肤':{msg:'建议拍张清晰照片给我分析。同时：<br><br>• 检查患处有无红肿、脱毛、皮屑<br>• 观察宠物是否频繁抓挠<br>• 近期有无换粮或环境变化？<br><br>📸 点击底部拍照tab来分析！',delay:1000},
+  '粮':{msg:'对1岁英短（已绝育）的建议：<br><br>🍖 <b>蛋白质</b>：动物蛋白优先，粗蛋白≥35%<br>⚖️ <b>热量控制</b>：绝育后代谢下降<br>🚫 <b>避开</b>：过多谷物、人工色素<br>💧 <b>补水</b>：英短不爱喝水建议搭配湿粮<br><br>需要分析某款粮的成分表吗？',delay:1500},
+  '打喷嚏':{msg:'偶尔打喷嚏（1-2次每天）正常，但频繁需要关注：<br><br>🟡 <b>建议观察</b><br><br>可能原因：<br>• 猫砂粉尘（最常见）<br>• 轻微上呼吸道刺激<br>• 季节性过敏<br><br>你可以：<br>① 换低粉尘猫砂（如豆腐砂）<br>② 检查有无新香薰等刺激物<br>③ 观察伴随症状<br><br>⚠️ 如有鼻涕、眼分泌物、萎靡、食欲下降请就医。',delay:1800},
+  def:{msg:'好的，为更好判断请告诉我：<br><br>• 这个情况持续多久了？<br>• 精神状态和食欲有无变化？<br>• 有没有其他伴随症状？<br><br>也可以拍张照片我做视觉分析📸',delay:1000}
+};
+function sendMessage(){
+  var inp=document.getElementById('chatInput');
+  var txt=inp.value.trim();
+  if(!txt)return;
+  addMsg(txt,'user');
+  inp.value='';inp.focus();
+  var md=document.getElementById('chatMessages');
+  var tp=document.createElement('div');
+  tp.className='typing-indicator';tp.id='typing';
+  tp.innerHTML='<span></span><span></span><span></span>';
+  md.appendChild(tp);md.scrollTop=md.scrollHeight;
+  var r=cr.def;
+  for(var k in cr){if(k!=='def'&&txt.indexOf(k)!==-1){r=cr[k];break;}}
+  setTimeout(function(){
+    var te=document.getElementById('typing');
+    if(te)te.remove();
+    addMsg(r.msg,'ai');
+  },r.delay||1000);
+}
+function addMsg(txt,role){
+  var md=document.getElementById('chatMessages');
+  var dv=document.createElement('div');
+  dv.className='chat-msg '+role;
+  if(role==='ai')dv.innerHTML='<div class="ai-label">🐾 宠小满AI助手</div>'+txt;
+  else dv.textContent=txt;
+  dv.classList.add('fade-in');
+  md.appendChild(dv);md.scrollTop=md.scrollHeight;
+}
+function toggleReminder(el){
+  if(el.classList.contains('on')){el.classList.remove('on');el.classList.add('off')}
+  else{el.classList.remove('off');el.classList.add('on')}
+}
+function showPayModal(){document.getElementById('payModal').classList.add('active')}
+function closePayModal(){document.getElementById('payModal').classList.remove('active')}
+document.getElementById('payModal').addEventListener('click',function(e){if(e.target===this)closePayModal()});
+function showToast(m){
+  var t=document.getElementById('toast');
+  t.textContent=m;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show')},1800);
+}
+</script>
+</body>
+</html>
+
